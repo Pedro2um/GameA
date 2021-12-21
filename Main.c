@@ -1,3 +1,10 @@
+/*
+    This game is developed only for educational purpose,
+    it is a "follow along" code, from a youtube series on
+    game devlopment with the C programming language.
+
+*/
+
 #include <stdio.h>
 
 #pragma warning(push, 3)
@@ -20,7 +27,11 @@ GAMEBITMAP gBackBuffer;
 
 MONITORINFO gMonitorInfo = { sizeof(MONITORINFO) } ;
 
-int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, INT CmdShow)
+int32_t gMonitorHeight;
+
+int32_t gMonitorWidth;
+
+int __stdcall WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, INT CmdShow)
 {   
     
 
@@ -32,7 +43,10 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandL
 
     if (GameIsAlreadyRunning() == TRUE)
     {
-        MessageBoxA(NULL, "Another instance of this program is already running!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+        MessageBoxA(
+            NULL, 
+            "Another instance of this program is already running!",
+            "Error!", MB_ICONEXCLAMATION | MB_OK);
 
         goto Exit;
     }
@@ -56,11 +70,18 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandL
     gBackBuffer.BitmapInfo.bmiHeader.biPlanes = 1;
 
 
-    gBackBuffer.Memory = VirtualAlloc(NULL, GAME_DRAWING_AREA_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    gBackBuffer.Memory = VirtualAlloc(
+        NULL,
+        GAME_DRAWING_AREA_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT,
+        PAGE_READWRITE);
 
     if (gBackBuffer.Memory == NULL)
     {
-        MessageBoxA(NULL, "Failed to allocate memory for drawing surface!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+        MessageBoxA(
+            NULL, 
+            "Failed to allocate memory for drawing surface!",
+            "Error!",
+            MB_ICONEXCLAMATION | MB_OK);
 
         goto Exit;
     }
@@ -95,7 +116,11 @@ Exit:
 } 
 
 
-LRESULT CALLBACK MainWindowdProc(_In_ HWND WindowHandle, _In_ UINT Message, _In_ WPARAM WParam, _In_ LPARAM LParam)
+LRESULT CALLBACK MainWindowdProc(
+    _In_ HWND WindowHandle, 
+    _In_ UINT Message, 
+    _In_ WPARAM WParam, 
+    _In_ LPARAM LParam)
 {
     LRESULT Result = 0;
     switch (Message)
@@ -149,6 +174,7 @@ DWORD CreateMainGameWindow(void)
 
     WindowClass.lpszClassName = GAME_NAME "_WINDOWCLASS";
 
+    //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 
     if (RegisterClassExA(&WindowClass) == 0)
@@ -158,7 +184,18 @@ DWORD CreateMainGameWindow(void)
         goto Exit;
     }
 
-    gGameWindow = CreateWindowExA(WS_EX_CLIENTEDGE, WindowClass.lpszClassName, "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, NULL, NULL, GetModuleHandleA(NULL), NULL);
+    gGameWindow = CreateWindowExA(
+        WS_EX_CLIENTEDGE,
+        WindowClass.lpszClassName, 
+        "Window Title",
+        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT, 
+        640, 
+        480, 
+        NULL,
+        NULL, 
+        GetModuleHandleA(NULL), NULL);
 
     if (gGameWindow == NULL)
     {   
@@ -175,11 +212,33 @@ DWORD CreateMainGameWindow(void)
         goto Exit;
     }
 
-    int MonitorWidth = gMonitorInfo.rcMonitor.right - gMonitorInfo.rcMonitor.left;
+    gMonitorWidth = gMonitorInfo.rcMonitor.right - gMonitorInfo.rcMonitor.left;
 
-    int MonitorHeight = gMonitorInfo.rcMonitor.bottom - gMonitorInfo.rcMonitor.top;
+    gMonitorHeight = gMonitorInfo.rcMonitor.bottom - gMonitorInfo.rcMonitor.top;
 
+    if (SetWindowLongPtrA(
+        gGameWindow,
+        GWL_STYLE, 
+        (WS_OVERLAPPEDWINDOW | WS_VISIBLE) & ~WS_OVERLAPPEDWINDOW) == 0)
+    {
+        Result = GetLastError();
 
+        goto Exit;
+    }
+
+    if (SetWindowPos(gGameWindow, 
+        HWND_TOP, 
+        gMonitorInfo.rcMonitor.left,
+        gMonitorInfo.rcMonitor.top,
+        gMonitorWidth, gMonitorHeight,
+        SWP_NOOWNERZORDER | SWP_FRAMECHANGED) == 0)
+    {
+        Result = GetLastError();
+
+        goto Exit;
+    }
+
+    
 
  Exit:
 
@@ -190,7 +249,7 @@ BOOL GameIsAlreadyRunning(void)
 {
     HANDLE Mutex = NULL;
 
-    //Mutex = CreateMutexA(NULL, GAME_NAME "_GameMutex");
+    Mutex = CreateMutexA(NULL, FALSE, GAME_NAME "_GameMutex");
 
     if ( GetLastError() == ERROR_ALREADY_EXISTS)
     {
@@ -205,7 +264,7 @@ BOOL GameIsAlreadyRunning(void)
 
 void ProcessPlayerInput(void)
 {
-    short EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE); 
+    int16_t EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE); 
 
     if (EscapeKeyIsDown)
     {
@@ -214,10 +273,37 @@ void ProcessPlayerInput(void)
 }
 
 void RenderFrameGraphics(void)
-{
+{   
+    //memset(gBackBuffer.Memory, 0xFF, GAME_DRAWING_AREA_MEMORY_SIZE); 
+    // the game will crash if you put 1 more byte than the macro GAME_DRAWING_AREA_MEMORY_SIZE
+
+    PIXEL32 Pixel = { 0 };
+
+    Pixel.Blue = 0xff;
+    Pixel.Green = 0;
+    Pixel.Red = 0;
+    Pixel.Alpha = 0xff;
+
+    for (int x = 0; x < GAME_RES_WIDTH * GAME_RES_HEIGHT; x++)
+    {
+        memcpy((PIXEL32*)gBackBuffer.Memory + x, &Pixel, 4);
+    }
+        
+
     HDC DeviceContext = GetDC(gGameWindow);
     
-    StretchDIBits(DeviceContext, 0, 0, 100, 100, 0, 0, 100, 100, gBackBuffer.Memory, &gBackBuffer.BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+    StretchDIBits(DeviceContext, 
+        0, 
+        0, 
+        gMonitorWidth, 
+        gMonitorHeight, 
+        0, 
+        0, 
+        GAME_RES_WIDTH, 
+        GAME_RES_HEIGHT,
+        gBackBuffer.Memory, 
+        &gBackBuffer.BitmapInfo,
+        DIB_RGB_COLORS, SRCCOPY);
 
     ReleaseDC(gGameWindow, DeviceContext);
 }
