@@ -10,13 +10,17 @@
 
 #define GAME_DRAWING_AREA_MEMORY_SIZE		(GAME_RES_WIDTH * GAME_RES_HEIGHT * (GAME_BPP / 8) )
 
+#define CALCULATE_AVG_FPS_EVERY_X_FRAMES	100
+
+#pragma warning(disable: 4820)
+
 typedef struct GAMEBITMAP
 {	
 
 	BITMAPINFO BitmapInfo;
 
-	void* Memory;
-
+	void* Memory;			
+							
 }GAMEBITMAP;
 
 
@@ -31,6 +35,30 @@ typedef struct PIXEL32
 	uint8_t Alpha;
 
 } PIXEL32;
+
+typedef struct GAMEPERFDATA
+{
+	uint64_t TotalFramesRendered;
+
+	uint32_t RawFramesPerSecondAverage;
+
+	uint32_t CookedFramesPerSecondAverage;
+
+	LARGE_INTEGER PerfFrequency;
+
+	LARGE_INTEGER FrameStart;
+
+	LARGE_INTEGER FrameEnd;
+
+	LARGE_INTEGER ElapsedMicrosecondsPerFrame;
+
+	MONITORINFO MonitorInfo;
+
+	int32_t MonitorHeight;
+
+	int32_t MonitorWidth;
+
+} GAMEPERFDATA;
 
 LRESULT CALLBACK MainWindowdProc(
 	_In_ HWND WindowHandle,
